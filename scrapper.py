@@ -19,13 +19,34 @@ class Scrapper():
         unit_value = self.driver.find_element(By.CSS_SELECTOR, '.site-data__unit-value sg-unit-value-inner').text.strip()
         unit_label = self.driver.find_element(By.CSS_SELECTOR, '.site-data__unit-label .mat-menu-trigger span').text.strip()
 
-        self.driver.quit()
         return unit_value, unit_label
+    
+    def close(self):
+        self.driver.quit()
 
 def main() -> None:
     scrap = Scrapper()
-    latitude:float = 24.846565
-    longtitude:float =  -102.480469
-    print(scrap.get_unit_value(latitude, longtitude))
+    coordinates = [
+        (24.846565, -102.480469),
+        (34.052235, -118.243683),
+        (51.507222, -0.1275),
+        (35.689487, 139.691711),
+        (-33.865143, 151.209900)
+    ]
+
+    results = []
+    for latitude, longitude in coordinates:
+        try:
+            unit_value, unit_label = scrap.get_unit_value(latitude, longitude)
+            results.append((latitude, longitude, unit_value, unit_label))
+        except Exception as e:
+            results.append((latitude, longitude, 'Error', str(e)))
+
+    scrap.close()
+
+    for result in results:
+        print(result)
+
+    scrap.close()
 if __name__ == '__main__':
     main()
