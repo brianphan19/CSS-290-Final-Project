@@ -11,25 +11,19 @@ class Scrapper():
         service = Service(ChromeDriverManager().install())
         self.driver = webdriver.Chrome(service=service, options=options)
 
-    def get_unit_value(self, lat, lon):
-        url = f'https://globalsolaratlas.info/map?c=11.609193,8.261719,3&s={lat},{lon}&m=site'
+    def get_unit_value(self, loc_lat:float, loc_lon:float):
+        url:str = f'https://globalsolaratlas.info/map?c=11.609193,8.261719,3&s={loc_lat},{loc_lon}&m=site'
         self.driver.get(url)
         self.driver.implicitly_wait(10) 
 
-        # Assuming the CSS selector is corrected as needed
-        layer_full_name = driver.find_element(By.CSS_SELECTOR, '.site-data__layer-full-name p').text
-        layer_name = driver.find_element(By.CSS_SELECTOR, '.site-data__layer-name gsa-site-data-key').text.strip()
-        unit_value = driver.find_element(By.CSS_SELECTOR, '.site-data__unit-value sg-unit-value-inner').text.strip()
-        unit_label = driver.find_element(By.CSS_SELECTOR, '.site-data__unit-label .mat-menu-trigger span').text.strip()
-
-        print(f"Layer Full Name: {layer_full_name}")
-        print(f"Layer Name: {layer_name}")
-        print(f"Unit Value: {unit_value}")
-        print(f"Unit Label: {unit_label}")
+        unit_value = self.driver.find_element(By.CSS_SELECTOR, '.site-data__unit-value sg-unit-value-inner').text.strip()
+        unit_label = self.driver.find_element(By.CSS_SELECTOR, '.site-data__unit-label .mat-menu-trigger span').text.strip()
 
         self.driver.quit()
-        return unit_value
+        return unit_value, unit_label
 
-# scrap = Scrapper()
+scrap = Scrapper()
 
-# scrap.get_unit_value(lat, lon)
+latitude:float = 24.846565
+longtitude:float =  -102.480469
+print(scrap.get_unit_value(latitude, longtitude))
