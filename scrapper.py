@@ -12,17 +12,19 @@ class Scrapper():
         self.driver = webdriver.Chrome(service=service, options=options)
 
     def get_unit_value(self, loc_lat:float, loc_lon:float):
-        url:str = f'https://globalsolaratlas.info/map?c=11.609193,8.261719,3&s={loc_lat},{loc_lon}&m=site'
+        url:str = f'https://globalsolaratlas.info/map?s={loc_lat},{loc_lon}&m=site'
         self.driver.get(url)
         self.driver.implicitly_wait(10) 
 
+        
+        # Updated CSS Selectors based on the provided HTML
         unit_value = self.driver.find_element(By.CSS_SELECTOR, '.site-data__unit-value sg-unit-value-inner').text.strip()
         unit_label = self.driver.find_element(By.CSS_SELECTOR, '.site-data__unit-label .mat-menu-trigger span').text.strip()
-
         return unit_value, unit_label
+      
     
     def get_temperature(self, loc_lat: float, loc_lon: float):
-        url: str = f'https://globalsolaratlas.info/map?c=11.609193,8.261719,3&s={loc_lat},{loc_lon}&m=site'
+        url: str = f'https://globalsolaratlas.info/map?s={loc_lat},{loc_lon}&m=site'
         self.driver.get(url)
         self.driver.implicitly_wait(10)
 
@@ -30,7 +32,7 @@ class Scrapper():
         return temperature_value
     
     def get_values(self, loc_lat: float, loc_lon: float):
-        url: str = f'https://globalsolaratlas.info/map?c=11.609193,8.261719,3&s={loc_lat},{loc_lon}&m=site'
+        url: str = f'https://globalsolaratlas.info/map?s={loc_lat},{loc_lon}&m=site'
         self.driver.get(url)
         self.driver.implicitly_wait(10)
         
@@ -56,8 +58,8 @@ def main() -> None:
     for latitude, longitude in coordinates:
         try:
             unit_value, unit_label = scrap.get_unit_value(latitude, longitude)
-            temperature_value, temperature_label = scrap.get_temperature(latitude, longitude)
-            results.append((latitude, longitude, unit_value, unit_label, temperature_value, temperature_label))
+            temperature_value = scrap.get_temperature(latitude, longitude)
+            results.append((latitude, longitude, unit_value, unit_label, temperature_value))
         except Exception as e:
             results.append((latitude, longitude, 'Error', str(e), 'Error', str(e)))
 
