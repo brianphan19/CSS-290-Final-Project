@@ -22,8 +22,10 @@ class Scrapper():
         self.driver.quit()
         return unit_value, unit_label
 
-scrap = Scrapper()
-
-latitude:float = 24.846565
-longtitude:float =  -102.480469
-print(scrap.get_unit_value(latitude, longtitude))
+def main() -> None:
+    scrap = Scrapper()
+    latitude:float = 24.846565
+    longtitude:float =  -102.480469
+    print(scrap.get_unit_value(latitude, longtitude))
+if __name__ == '__main__':
+    main()
