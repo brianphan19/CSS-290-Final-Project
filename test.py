@@ -47,4 +47,16 @@ lat = 24.846565
 lon =  -102.480469
 print(get_unit(driver, lat, lon))
 
+def convert_coord(deg, min, sec) -> float:
+    return deg + min/60 + sec/(60**2)
 
+# Techren solar project 35.78333°N 115.01667°W
+# Mesquite solar project 33°20′N 112°55′W
+# Springbok Solar Farm  35.24000°N 117.96000°W
+# Permian Energy Center 32.121853, -102.529659 
+# Roadrunner Solar
+# Desert Sunlight Solar Farm
+# Topaz Solar Farm
+# Solar Star
+# Mount Signal SOlar
+# Copper Mountain SOlar facility
