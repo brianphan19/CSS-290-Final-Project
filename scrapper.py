@@ -32,6 +32,7 @@ def fetch_data(scrapper, latitude, longitude, results, index):
     results[index] = (latitude, longitude, unit_value, unit_label)
 
 def main() -> None:
+    start = time.time()
     coordinates = [
         (24.846565, -102.480469),
         (34.052235, -118.243683),
