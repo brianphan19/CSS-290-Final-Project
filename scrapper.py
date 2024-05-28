@@ -1,38 +1,47 @@
+import threading
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
-import threading
 
 class Scrapper():
     def __init__(self) -> None:
         options = Options()
-        options.headless = True  # Run in headless mode (no GUI)
+        options.headless = True  # Run in normal mode for debugging
         service = Service(ChromeDriverManager().install())
         self.driver = webdriver.Chrome(service=service, options=options)
 
     def get_unit_value(self, loc_lat: float, loc_lon: float):
-        url: str = f'https://globalsolaratlas.info/map?c=11.609193,8.261719,3&s={loc_lat},{loc_lon}&m=site'
+        url = f'https://globalsolaratlas.info/map?s={loc_lat},{loc_lon}&m=site'
         self.driver.get(url)
-        self.driver.implicitly_wait(5)  # Reduced wait time
-
+        
         try:
-            unit_value = self.driver.find_element(By.CSS_SELECTOR, '.site-data__unit-value sg-unit-value-inner').text.strip()
-            unit_label = self.driver.find_element(By.CSS_SELECTOR, '.site-data__unit-label .mat-menu-trigger span').text.strip()
+            # Wait for the specific photovoltaic power output value
+            unit_value = WebDriverWait(self.driver, 20).until(
+                EC.visibility_of_element_located((By.CSS_SELECTOR, 'div.site-data__unit-value sg-unit-value sg-unit-value-inner'))
+            ).text.strip()
+            unit_label = WebDriverWait(self.driver, 20).until(
+                EC.visibility_of_element_located((By.CSS_SELECTOR, 'div.site-data__unit-label span.mat-menu-trigger'))
+            ).text.strip()
             return unit_value, unit_label
         except Exception as e:
+            self.driver.save_screenshot('error_screenshot.png')
+            print(f"Error fetching data for coordinates ({loc_lat}, {loc_lon}): {e}")
             return 'Error', str(e)
 
     def close(self):
         self.driver.quit()
 
-def fetch_data(scrapper, latitude, longitude, results, index):
+def fetch_data(latitude, longitude, results, index):
+    scrapper = Scrapper()
     unit_value, unit_label = scrapper.get_unit_value(latitude, longitude)
+    scrapper.close()
     results[index] = (latitude, longitude, unit_value, unit_label)
 
 def main() -> None:
-    start = time.time()
     coordinates = [
         (24.846565, -102.480469),
         (34.052235, -118.243683),
@@ -41,19 +50,16 @@ def main() -> None:
         (-33.865143, 151.209900)
     ]
 
-    scrap = Scrapper()
     results = [None] * len(coordinates)
     threads = []
 
     for i, (latitude, longitude) in enumerate(coordinates):
-        thread = threading.Thread(target=fetch_data, args=(scrap, latitude, longitude, results, i))
+        thread = threading.Thread(target=fetch_data, args=(latitude, longitude, results, i))
         threads.append(thread)
         thread.start()
 
     for thread in threads:
         thread.join()
-
-    scrap.close()
 
     for result in results:
         print(result)
