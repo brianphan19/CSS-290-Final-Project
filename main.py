@@ -55,10 +55,10 @@ filtered_results = [result for result in results if result is not None]
 results_df = pd.DataFrame(filtered_results, columns=['p_name', 'p_area', 'p_cap_ac', 'p_cap_dc', 'unit_value'])
 
 plt.figure(figsize=(12, 8))
-plt.bar(results_df['p_name'], results_df['unit_value'], color='skyblue')
+plt.bar(results_df['p_name'], results_df['unit_value'] / results_df['p_area'], color='skyblue')
 plt.xlabel('Plant Names')
-plt.ylabel('Output Value')
-plt.title('Output Value of Top 10 Plants')
+plt.ylabel('Output Value / area')
+plt.title('Output Value / area of Top 10 Plants')
 plt.xticks(rotation=90)
 plt.tight_layout()
 plt.show()
