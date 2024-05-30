@@ -10,47 +10,41 @@ from webdriver_manager.chrome import ChromeDriverManager
 class Scrapper():
     def __init__(self) -> None:
         options = Options()
-        options.headless = True  # Run in normal mode for debugging
+        options.headless = False  # Run in normal mode for debugging
         service = Service(ChromeDriverManager().install())
         self.driver = webdriver.Chrome(service=service, options=options)
-
-    def get_unit_value(self, loc_lat:float, loc_lon:float):
-        url:str = f'https://globalsolaratlas.info/map?s={loc_lat},{loc_lon}&m=site'
-        self.driver.get(url)
-        self.driver.implicitly_wait(10) 
-
-        
-        # Updated CSS Selectors based on the provided HTML
-        unit_value = self.driver.find_element(By.CSS_SELECTOR, '.site-data__unit-value sg-unit-value-inner').text.strip()
-        unit_label = self.driver.find_element(By.CSS_SELECTOR, '.site-data__unit-label .mat-menu-trigger span').text.strip()
-        return unit_value, unit_label
-      
     
-    def get_temperature(self, loc_lat: float, loc_lon: float):
-        url: str = f'https://globalsolaratlas.info/map?s={loc_lat},{loc_lon}&m=site'
-        self.driver.get(url)
-        self.driver.implicitly_wait(10)
+    def open_new_tab(self, url):
+        self.driver.execute_script(f"window.open('{url}', '_blank');")
 
-        temperature_value = self.driver.find_element(By.XPATH, "//div[contains(@class, 'site-data__layer-name') and contains(., 'TEMP')]/following-sibling::div[contains(@class, 'site-data__unit-value')]//sg-unit-value-inner").text.strip()
-        return temperature_value
-    
-    def get_values(self, loc_lat: float, loc_lon: float):
-        url: str = f'https://globalsolaratlas.info/map?s={loc_lat},{loc_lon}&m=site'
-        self.driver.get(url)
-        self.driver.implicitly_wait(10)
+    def get_unit_value(self, loc_lat: float, loc_lon: float):
+        url = f'https://globalsolaratlas.info/map?s={loc_lat},{loc_lon}&m=site'
+        self.open_new_tab(url)
+        self.driver.switch_to.window(self.driver.window_handles[-1])
         
-        unit_value = self.driver.find_element(By.CSS_SELECTOR, '.site-data__unit-value sg-unit-value-inner').text.strip()
-        temperature_value = self.driver.find_element(By.XPATH, "//div[contains(@class, 'site-data__layer-name') and contains(., 'TEMP')]/following-sibling::div[contains(@class, 'site-data__unit-value')]//sg-unit-value-inner").text.strip()
-        
-        return unit_value, temperature_value
-    
+        try:
+            # Wait for the specific photovoltaic power output value
+            unit_value = WebDriverWait(self.driver, 20).until(
+                EC.visibility_of_element_located((By.CSS_SELECTOR, 'div.site-data__unit-value sg-unit-value sg-unit-value-inner'))
+            ).text.strip()
+            unit_label = WebDriverWait(self.driver, 20).until(
+                EC.visibility_of_element_located((By.CSS_SELECTOR, 'div.site-data__unit-label span.mat-menu-trigger'))
+            ).text.strip()
+            self.driver.close()
+            self.driver.switch_to.window(self.driver.window_handles[0])
+            return unit_value, unit_label
+        except Exception as e:
+            self.driver.save_screenshot('error_screenshot.png')
+            print(f"Error fetching data for coordinates ({loc_lat}, {loc_lon}): {e}")
+            self.driver.close()
+            self.driver.switch_to.window(self.driver.window_handles[0])
+            return 'Error', str(e)
+
     def close(self):
         self.driver.quit()
 
-def fetch_data(latitude, longitude, results, index):
-    scrapper = Scrapper()
+def fetch_data(scrapper, latitude, longitude, results, index):
     unit_value, unit_label = scrapper.get_unit_value(latitude, longitude)
-    scrapper.close()
     results[index] = (latitude, longitude, unit_value, unit_label)
 
 def main() -> None:
@@ -62,14 +56,17 @@ def main() -> None:
         (-33.865143, 151.209900)
     ]
 
-    results = []
-    for latitude, longitude in coordinates:
-        try:
-            unit_value, unit_label = scrap.get_unit_value(latitude, longitude)
-            temperature_value = scrap.get_temperature(latitude, longitude)
-            results.append((latitude, longitude, unit_value, unit_label, temperature_value))
-        except Exception as e:
-            results.append((latitude, longitude, 'Error', str(e), 'Error', str(e)))
+    scrap = Scrapper()
+    results = [None] * len(coordinates)
+    threads = []
+
+    for i, (latitude, longitude) in enumerate(coordinates):
+        thread = threading.Thread(target=fetch_data, args=(scrap, latitude, longitude, results, i))
+        threads.append(thread)
+        thread.start()
+
+    for thread in threads:
+        thread.join()
 
     scrap.close()
 
