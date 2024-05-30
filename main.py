@@ -9,9 +9,9 @@ import matplotlib.cm as cm
 # Load the data into a pandas DataFrame
 df = pd.read_csv('uspvdb_v1_0_20231108.csv')
 
-# Now you can access the data using the column names you provided
-df['p_cap_tot'] = df['p_cap_dc'] + df['p_cap_ac']
-df['avg_area'] = df['p_cap_tot'] / df['p_area']
+# Select the top 10 rows with the highest z-scores
+top_farms = df.nlargest(10, 'p_zscore')
+print(top_farms)
 
 # Function to fetch data using the Scrapper class
 def fetch_data(row,  results, index):
@@ -25,16 +25,12 @@ def fetch_data(row,  results, index):
     numeric_value = int(float(re.findall(r"[-+]?\d*\.\d+|\d+", unit_value)[0]))
     results[index] = (row['p_name'], row['p_area'], row['p_cap_ac'], row['p_cap_dc'], numeric_value)
 
-# Select the top 10 rows with the highest z-scores
-d = df.nlargest(10, 'p_zscore')
-print(d)
-
 # Prepare a list to store the results and threads
-results = [None] * len(d)
+results = [None] * len(top_farms)
 threads = []
 index = 0
 # Iterate over the selected rows
-for i, row in d.iterrows():
+for i, row in top_farms.iterrows():
     # Start a new thread for each row
     thread = threading.Thread(target=fetch_data, args=(row, results, index))
     threads.append(thread)
@@ -45,30 +41,27 @@ for i, row in d.iterrows():
 for thread in threads:
     thread.join()
 
-# Print the results
-for result in results:
-    print(result)
-
-filtered_results = [result for result in results if result[4] is not None]
-
 # Convert results to a DataFrame for plotting
-results_df = pd.DataFrame(filtered_results, columns=['p_name', 'p_area', 'p_cap_ac', 'p_cap_dc', 'unit_value'])
+results_df = pd.DataFrame(results, columns=['p_name', 'p_area', 'p_cap_ac', 'p_cap_dc', 'unit_value'])
 
 # Create a unique color for each name
-unique_names = results_df['p_name'].unique()
-colors = cm.rainbow(np.linspace(0, 1, len(unique_names)))
-color_map = dict(zip(unique_names, colors))
+# unique_names = results_df['p_name'].unique()
+# colors = cm.rainbow(np.linspace(0, 1, len(unique_names)))
+# color_map = dict(zip(unique_names, colors))
 
-# Create the scatter plot
-plt.figure(figsize=(10, 6))
+# # Create the scatter plot
+# plt.figure(figsize=(10, 6))
 
-for name, color in color_map.items():
-    subset = results_df[results_df['p_name'] == name]
-    plt.scatter(subset['p_area'], subset['unit_value'], label=name, color=color, alpha=0.7)
+# for name, color in color_map.items():
+#     subset = results_df[results_df['p_name'] == name]
+#     plt.scatter(subset['p_area'], subset['unit_value'], label=name, color=color, alpha=0.7)
 
-plt.title('Area vs Unit Value')
-plt.xlabel('Area (m^2)')
-plt.ylabel('Unit Value (kWh/kWp)')
-plt.legend(title='Plant Names')
-plt.grid(True)
+plt.figure(figsize=(12, 8))
+plt.bar(results_df['p_name'], results_df['unit_value'], color='skyblue')
+plt.xlabel('Plant Names')
+plt.ylabel('Solar ouput (kWh/kWp)')
+plt.title('Current solar output of Top 10 Farms')
+plt.xticks(rotation=90)
+plt.tight_layout()
 plt.show()
+
