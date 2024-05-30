@@ -49,26 +49,16 @@ for thread in threads:
 for result in results:
     print(result)
 
-filtered_results = [result for result in results if result[4] is not None]
+filtered_results = [result for result in results if result is not None]
 
 # Convert results to a DataFrame for plotting
 results_df = pd.DataFrame(filtered_results, columns=['p_name', 'p_area', 'p_cap_ac', 'p_cap_dc', 'unit_value'])
 
-# Create a unique color for each name
-unique_names = results_df['p_name'].unique()
-colors = cm.rainbow(np.linspace(0, 1, len(unique_names)))
-color_map = dict(zip(unique_names, colors))
-
-# Create the scatter plot
-plt.figure(figsize=(10, 6))
-
-for name, color in color_map.items():
-    subset = results_df[results_df['p_name'] == name]
-    plt.scatter(subset['p_area'], subset['unit_value'], label=name, color=color, alpha=0.7)
-
-plt.title('Area vs Unit Value')
-plt.xlabel('Area (m^2)')
-plt.ylabel('Unit Value (kWh/kWp)')
-plt.legend(title='Plant Names')
-plt.grid(True)
+plt.figure(figsize=(12, 8))
+plt.bar(results_df['p_name'], results_df['unit_value'], color='skyblue')
+plt.xlabel('Plant Names')
+plt.ylabel('Output Value')
+plt.title('Output Value of Top 10 Plants')
+plt.xticks(rotation=90)
+plt.tight_layout()
 plt.show()
