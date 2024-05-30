@@ -2,6 +2,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scrapper import Scrapper
 import threading
+import re
+import numpy as np
+import matplotlib.cm as cm
 
 # Load the data into a pandas DataFrame
 df = pd.read_csv('uspvdb_v1_0_20231108.csv')
@@ -17,9 +20,10 @@ def fetch_data(row,  results, index):
     latitude = row['ylat']
     longitude = row['xlong']
 
-    unit_value, unit_label = scrapper.get_unit_value(latitude, longitude)
+    unit_value = scrapper.get_unit_value(latitude, longitude)
     scrapper.close()
-    results[index] = (row['p_name'], row['p_area'], row['p_cap_ac'], row['p_cap_dc'], unit_value + ' ' + unit_label.replace('arrow_drop_down', ''))
+    numeric_value = int(float(re.findall(r"[-+]?\d*\.\d+|\d+", unit_value)[0]))
+    results[index] = (row['p_name'], row['p_area'], row['p_cap_ac'], row['p_cap_dc'], numeric_value)
 
 # Select the top 10 rows with the highest z-scores
 d = df.nlargest(10, 'p_zscore')
@@ -44,3 +48,27 @@ for thread in threads:
 # Print the results
 for result in results:
     print(result)
+
+filtered_results = [result for result in results if result[4] is not None]
+
+# Convert results to a DataFrame for plotting
+results_df = pd.DataFrame(filtered_results, columns=['p_name', 'p_area', 'p_cap_ac', 'p_cap_dc', 'unit_value'])
+
+# Create a unique color for each name
+unique_names = results_df['p_name'].unique()
+colors = cm.rainbow(np.linspace(0, 1, len(unique_names)))
+color_map = dict(zip(unique_names, colors))
+
+# Create the scatter plot
+plt.figure(figsize=(10, 6))
+
+for name, color in color_map.items():
+    subset = results_df[results_df['p_name'] == name]
+    plt.scatter(subset['p_area'], subset['unit_value'], label=name, color=color, alpha=0.7)
+
+plt.title('Area vs Unit Value')
+plt.xlabel('Area (m^2)')
+plt.ylabel('Unit Value (kWh/kWp)')
+plt.legend(title='Plant Names')
+plt.grid(True)
+plt.show()

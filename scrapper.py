@@ -27,12 +27,9 @@ class Scrapper():
             unit_value = WebDriverWait(self.driver, 20).until(
                 EC.visibility_of_element_located((By.CSS_SELECTOR, 'div.site-data__unit-value sg-unit-value sg-unit-value-inner'))
             ).text.strip()
-            unit_label = WebDriverWait(self.driver, 20).until(
-                EC.visibility_of_element_located((By.CSS_SELECTOR, 'div.site-data__unit-label span.mat-menu-trigger'))
-            ).text.strip()
             self.driver.close()
             self.driver.switch_to.window(self.driver.window_handles[0])
-            return unit_value, unit_label
+            return unit_value
         except Exception as e:
             self.driver.save_screenshot('error_screenshot.png')
             print(f"Error fetching data for coordinates ({loc_lat}, {loc_lon}): {e}")
